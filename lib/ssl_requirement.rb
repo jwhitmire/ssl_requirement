@@ -33,6 +33,10 @@ module SslRequirement
     def ssl_allowed(*actions)
       write_inheritable_array(:ssl_allowed_actions, actions)
     end
+    
+    def ignored_environments
+      %w(development)
+    end
   end
   
   protected
@@ -47,7 +51,7 @@ module SslRequirement
 
   private
     def ensure_proper_protocol
-      return true if ssl_allowed? || ignored_environment?
+      return true if ssl_allowed? || ignored_environments.include(ENV['RAILS_ENV'])
 
       if ssl_required? && !request.ssl?
         redirect_to "https://" + request.host + request.request_uri
@@ -57,16 +61,6 @@ module SslRequirement
         redirect_to "http://" + request.host + request.request_uri
         flash.keep
         return false
-      end
-    end
-    
-    def ignored_environment?
-      return false unless defined?(Rails.configuration.ssl_ignored_environments)
-      
-      if Rails.configuration.ssl_ignored_environments.is_a? Array
-        Rails.configuration.ssl_ignored_environments.include?(ENV['RAILS_ENV'])
-      else
-        Rails.configuration.ssl_ignored_environments == ENV['RAILS_ENV']
       end
     end
 end
